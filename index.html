@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js ie6" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!-->  <html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	
+	<title>Scala 2.10 SIP 14: Futures and Promises</title>
+	
+	<meta name="description" content="Presentation for Futures and Promises in Scala 2.10">
+	<meta name="author" content="Chris Baxter">
+	<meta name="viewport" content="width=1024, user-scalable=no">
+	
+	<!-- Core and extension CSS files -->
+	<link rel="stylesheet" href="core/deck.core.css">
+	<link rel="stylesheet" href="extensions/goto/deck.goto.css">
+	<link rel="stylesheet" href="extensions/menu/deck.menu.css">
+	<link rel="stylesheet" href="extensions/navigation/deck.navigation.css">
+	<link rel="stylesheet" href="extensions/status/deck.status.css">
+	<link rel="stylesheet" href="extensions/hash/deck.hash.css">
+	
+	<link rel="stylesheet" href="extensions/prettify/prettify.css">
+	
+	<!-- Theme CSS files (menu swaps these out) -->
+	<!-- <link rel="stylesheet" id="style-theme-link" href="themes/style/web-2.0.css"> -->
+	<!-- <link rel="stylesheet" id="transition-theme-link" href="themes/transition/horizontal-slide.css"> -->
+	
+	<!-- Custom CSS just for this page -->
+	<link rel="stylesheet" href="index.css">
+	<script src="jquery-1.7.min.js"></script>
+	<script src="modernizr.custom.js"></script>
+</head>
+
+<body class="deck-container" onload="prettyPrint()">
+
+<!-- <div class="theme-menu">
+	<h2>Themes</h2>	
+	
+	<label for="style-themes">Style:</label>
+	<select id="style-themes">
+		<option selected value="../themes/style/web-2.0.css">Web 2.0</option>
+		<option value="../themes/style/swiss.css">Swiss</option>
+		<option value="../themes/style/neon.css">Neon</option>
+		<option value="">None</option>
+	</select>
+	
+	<label for="transition-themes">Transition:</label>
+	<select id="transition-themes">
+		<option selected value="../themes/transition/horizontal-slide.css">Horizontal Slide</option>
+		<option value="../themes/transition/vertical-slide.css">Vertical Slide</option>
+		<option value="../themes/transition/fade.css">Fade</option>
+		<option value="">None</option>
+	</select>
+</div> -->
+
+<section class="slide" id="title-slide">
+	<div class="vcenter">
+		<p style="font-weight: bold; font-size:350%">Futures and Promises in Scala</p>
+		<p style="font-size:200%; font-style: italic; font-weight: normal">Scala 2.10 SIP 14</p>
+		<p style="font-size:200%; font-style: italic; font-weight: normal">presented by Chris Baxter</p>
+	</div>
+</section>
+
+<section class="slide" id="about-me">
+	<h2>About the presenter:</h2>
+	<ul>
+		<li class="slide" id="works-for">
+			<h3>Employed by Aquto</h3>
+			<p>Scala shop in the Innovation District</p>
+		</li>
+		<li class="slide" id="java-exp">
+			<h3>Long time Java programmer</h3>
+			<p>Until recently it was the center of my programming universe</p>
+		</li>
+		<li class="slide" id="scala-exp">
+			<h3>Scala enthusiast for about 18 months now</h3>
+			<p>Left Java to run off with Scala</p>
+		</li>
+	</ul>
+</section>
+
+<section class="slide" id="futures">
+	<h2>So let's talk about Futures...</h2>
+	<br/><br/>
+	<img src="images/flux.jpeg" width="900px" height="600px"/>
+</section>
+
+<section class="slide" id="creating-futures">
+	<h2>Creating a Future</h2>
+	
+	<div style="float:left; width: 25%">
+		<pre><code class="prettyprint lang-scala linenums">import scala.concurrent._
+		
+val service = WaitService()
+var f:Future[Int] = future{
+  service.echo(2)
+}</code></pre>	
+	</div>
+	<div style="float:left; border-left: 1px solid black; margin-left: 50px; height: 500px; padding-left: 20px">
+		<div class="slide" id="how-works"><h3>How does it all work?</h3></div>
+		<ul>
+			<li class="slide" id="create-1">
+				<h4>The signature of the future creation function is</h4>
+				<pre><code class="prettyprint lang-scala linenums">def future[T](body: => T)(implicit exec:ExecutionContext):Future[T]</code></pre>				
+			</li>
+			<li class="slide" id="create-2">
+				<h4>The future function comes from the package object in scala.concurrent</h4>
+			</li>					
+			<li class="slide" id="create-3">
+				<h4>You need an implicit ExecutionContext in scope<br/>&nbsp;&nbsp;...it's your ticket to party async style</h4>
+				<pre><code class="prettyprint lang-scala linenums">import scala.concurrent._
+import java.util.concurrent.Executors
+
+val tp = Executors.newCachedThreadPool()
+implicit val ex = ExecutionContext.fromExecutor(tp)</code></pre>
+			</li>			
+		</ul>	
+	</div>	
+	<div style="clear: both"/>
+</section>
+
+<section class="slide" id="futures-oncomplete">
+	<h2>Obtaining a Result: onComplete Callback</h2>
+	
+	<div style="float:left">
+		<pre><code class="prettyprint lang-scala linenums">f onComplete {
+  case Success(i) => 
+    println("Got " + i)
+  case Failure(e) => 
+    println("Error: " + e.getMessage)
+}</code></pre>		
+	</div>
+	<div style="float:left; border-left: 1px solid black; margin-left: 50px; height: 1000px; padding-left: 20px">
+		<ul>
+			<li class="slide" id="oncomp-1">
+				<h4>The signatures of onComplete is:</h4>
+				<pre><code class="prettyprint lang-scala linenums">def onComplete[U](func: Try[T] => U)(implicit exec:ExecutionContext):Unit</code></pre>				
+			</li>
+			<li class="slide" id="oncomp-2">
+				<h4>This callback is called asynchronously, in a non-blocking way, once <br/>the future is completed</h4>
+			</li>
+			<li class="slide" id="oncomp-3">
+				<h4>If the future has already been completed when registering the callback, <br/>then the callback may either be executed asynchronously, or sequentially on the same thread</h4>
+			</li>
+			<li class="slide" id="oncomp-4">
+				<h4>The callback will get a <code>Success</code> when the operation completes <br/>successfully and a <code>Failure</code> if an exception occurs</h4>
+			</li>	
+			<li class="slide" id="oncomp-5">
+				<h4><code>Success</code> and <code>Failure</code> are from the new <br/><code>Try</code> type (kind of like a specialized <code>Either</code>)</h4>
+			</li>							
+			<li class="slide" id="oncomp-6">
+				<h4>The <code>onComplete</code> callback is general in the sense that it let's you handle<br/> both success and failure results.  To handle one or the other, use <br/>the <code>onSuccess</code> and <code>onFailure</code> callbacks</h4>
+			</li>														
+		</ul>
+	</div>	
+	<div style="clear: both"/>
+</section>
+
+<section class="slide" id="futures-onsuccessfail">
+	<h2>Obtaining a Result: onSuccess, onFailure Callbacks</h2>
+	
+	<div style="float:left">
+		<pre><code class="prettyprint lang-scala linenums">f onSuccess {
+  case i => 
+    println("Success: " + 1)
+}
+f onFailure {
+  case e => 
+    println("Error: " + e.getMessage)
+}</code></pre>			
+	</div>
+	<div style="float:left; border-left: 1px solid black; margin-left: 50px; height: 1000px; padding-left: 20px">
+		<ul>
+			<li class="slide" id="onsuccessfail-1">
+				<h4>The signatures of these callbacks are:</h4>
+				<pre><code class="prettyprint lang-scala linenums">def onSuccess[U](pf: PartialFunction[T,U])(implicit exec:ExecutionContext):Unit
+def onFailure[U](pf: PartialFunction[Throwable,U])(implicit exec:ExecutionContext):Unit</code></pre>				
+			</li>	
+			<li class="slide" id="onsuccessfail-2">
+				<h4>The <code>onFailure</code> is callback is only invoked when the callback fails.  Same goes for <code>onSuccess</code>.</h4>				
+			</li>
+			<li class="slide" id="onsuccessfail-3">
+				<h4>Since these callbacks take <code>PartialFunction</code> as an arg, they will only be invoked<br/>if the <code>PartialFunction</code> is defined for a particular result type (via <code>isDefinedAt</code>)</h4>
+				<pre><code class="prettyprint lang-scala linenums">val fut:Future[Double] = future{
+  2 / 0
+}
+    
+fut onFailure {
+  case npe:NullPointerException => 
+    println("Never going to get here")    
+}</code></pre>				
+			</li>
+			<li class="slide" id="onsuccessfail-4">
+				<h4>Why use <code>PartialFunction</code> for these callbacks instead of a regular function callback?</h4>
+				<ul>
+					<li class="slide" id="onsuccessfail-5">
+						<h5>A regular function callback would require the default case in every callback, potentially <br/>leading to <code>MatchError</code></h5>
+					</li>
+					<li class="slide">
+						<h5>For <code>onFailure</code>, <code>try-catch</code> blocks also expect a <code>PartialFunction</code> value. That means <br/>that if there are generic partial function exception handlers present in the application then they <br/>will be compatible with the <code>onFailure</code> method</h5>
+					</li>
+				</ul>
+			</li>																	
+		</ul>
+	</div>	
+	<div style="clear: both"/>
+</section>
+
+<section class="slide" id="futures-callbacks">
+	<h2>Callbacks Continued...</h2>
+	<ul>
+		<li class="slide" id="cb1">
+			<h4>You can register multuple callbacks on a single <code>Future</code></h4>
+			<ul>
+				<li class="slide" id="cb2">
+					<h5>The execution order is not defined when multiple callbacks are registered</h5>
+				</li>
+				<li class="slide" id="cb3">
+					<h5>The callbacks might actually be invoked in parallel with one another</h5>
+				</li>				
+			</ul>
+		</li>
+		<li class="slide" id="cb8">
+			<h4>The return type of <code>Unit</code> was intentional to prevent chaining.</h4>
+			<ul>
+				<li class="slide" id="cb9">
+					<h5>Chaining might have mistakenly implied an execution order which is not true</h5>
+				</li>			
+			</ul>
+		</li>		
+		<li class="slide" id="cb4">
+			<h4>In the event that some of the callbacks throw an exception, the other callbacks are executed regardlessly</h4>
+		</li>	
+		<li class="slide" id="cb5">
+			<h4>In the event that some of the callbacks never complete (e.g. the callback contains an infinite loop), the other callbacks may not be executed at all</h4>
+			<ul>
+				<li class="slide" id="cb6">
+					<h5>In these cases, a potentially blocking callback must use the blocking construct (covered in a later slide)</h5>
+				</li>			
+			</ul>
+		</li>	
+		<li class="slide" id="cb7">
+			<h4>Once executed, the callbacks are removed from the future object, thus being eligible for GC</h4>
+		</li>				
+	</ul>
+</section>
+
+<section class="slide" id="futures-combinator">
+	<h2>Functional Composition of Futures.</h2>
+	<h3>Let's say we want to check the price of a product and only purchase it if it's below $100</h3><br/><br/>
+	<div style="float:left; width: 40%">
+		<h4>Plain callbacks</h4>
+		<pre><code class="prettyprint lang-scala linenums">val priceCheck = future{
+  priceService.checkPrice(productId)
+}
+    
+priceCheck onSuccess {
+  case price =>
+    val purchase = future{
+      if (price < 100) 
+        priceService.purchaseItem(productId)
+      else 
+        throw new Exception("to rich for my blood")
+    }
+    
+    purchase onSuccess{
+      case bool => 
+        println("Purchase was a success")
+    }
+}</code></pre>		
+	</div>
+	<div class="slide" style="float:left; border-left: 1px solid black; margin-left: 50px; height: 1000px; padding-left: 20px">
+		<h4>Using the <code>map</code> combinator</h4>
+		<pre><code class="prettyprint lang-scala linenums">val priceCheck = future{
+  priceService.checkPrice(productId)
+}
+
+val purchase = priceCheck map {
+  price =>
+    if (price < 100) priceService.purchaseItem(productId)
+    else throw new Exception("to rich for my blood")
+}    
+
+purchase onSuccess{
+  case bool => 
+    println("Purchase was a success")
+}</code></pre>
+
+	<h3>The <code>map</code> combinator works as follows:</h3>
+	<ul>
+		<li class="slide">
+			<h4>If the original future is completed successfully then the returned future is <br/>completed with a mapped value from the original future.</h4>
+		</li>
+		<li class="slide">
+			<h4>If the mapping function throws an exception the future is completed <br/>with that exception.</h4>
+		</li>
+		<li class="slide">
+			<h4>If the original future fails with an exception then the returned future <br/>also contains the same exception</h4>
+		</li>				
+	</ul>	
+	</div>	
+	<div style="clear: both"/>
+</section>
+
+<section class="slide" id="futures-forcomp">
+	<h2>You can use Futures in for-comprehensions too</h2>
+	<div style="float:left; width: 40%">
+		<pre><code class="prettyprint lang-scala linenums">val prod1 = 
+  future{priceService.checkPrice(prodId1)}
+val prod2 = 
+  future{priceService.checkPrice(prodId2)}
+
+val purchase = for{
+  price1 <- prod1
+  price2 <- prod2
+  if (price1 + price2 < 200)
+} yield priceService.purchaseBoth(prodId1, prodId2)
+
+purchase onSuccess{
+  case bool => 
+    println("Purchase was a success")
+}</code></pre>		
+	</div>
+	<div class="slide" style="float:left; border-left: 1px solid black; margin-left: 50px; height: 1000px; padding-left: 20px">
+		<ul>
+			<li class="slide">
+				<h4>To enable for-comprehensions, futures also have the <code>flatMap</code>, <code>filter</code> <br/>and <code>foreach</code> combinators</h4>
+			</li>
+			<li class="slide">
+				<h4>The <code>flatMap</code> method takes a function that maps the value to a new future <code>g</code>,<br/> and then returns a future which is completed once <code>g</code> is completed.</h4>
+			</li>
+			<li class="slide">
+				<h4>The <code>filter</code> combinator creates a new future which contains the value of<br/> the original future only if it satisfies some predicate. Otherwise, the new future<br/> is failed with a <code>NoSuchElementException</code></h4>
+			</li>	
+			<li class="slide">
+				<h4>The <code>foreach</code> combinator (not shown) does not block. Instead, <br/>the function for the foreach gets asynchronously executed only if the future is <br/>completed successfully. This means that the foreach has exactly the same<br/> semantics as the onSuccess callback.</h4>
+			</li>						
+		</ul>		
+	</div>	
+	<div style="clear: both"/>
+</section>
+
+
+<a href="#" class="deck-prev-link" title="Previous">&#8592;</a>
+<a href="#" class="deck-next-link" title="Next">&#8594;</a>
+
+<p class="deck-status">
+	<span class="deck-status-current"></span>
+	/
+	<span class="deck-status-total"></span>
+</p>
+
+<form action="." method="get" class="goto-form">
+	<label for="goto-slide">Go to slide:</label>
+	<input type="text" name="slidenum" id="goto-slide" list="goto-datalist">
+	<datalist id="goto-datalist"></datalist>
+	<input type="submit" value="Go">
+</form>
+
+<a href="." title="Permalink to this slide" class="deck-permalink">#</a>
+
+
+<!-- Deck Core and extensions -->
+<script src="core/deck.core.js"></script>
+<script src="extensions/hash/deck.hash.js"></script>
+<script src="extensions/menu/deck.menu.js"></script>
+<script src="extensions/goto/deck.goto.js"></script>
+<script src="extensions/status/deck.status.js"></script>
+<script src="extensions/navigation/deck.navigation.js"></script>
+
+<!-- Base codemiror code -->
+<script src="extensions/prettify/prettify.js"></script>
+<script src="extensions/prettify/lang-scala.js"></script>
+
+<!-- Specific to this page -->
+<script src="index.js"></script>
+
+</body>
+</html>
