@@ -20,6 +20,7 @@
 	<link rel="stylesheet" href="extensions/navigation/deck.navigation.css">
 	<link rel="stylesheet" href="extensions/status/deck.status.css">
 	<link rel="stylesheet" href="extensions/hash/deck.hash.css">
+	<link rel="stylesheet" href="extensions/scale/deck.scale.css">
 	
 	<link rel="stylesheet" href="extensions/prettify/prettify.css">
 	
@@ -67,16 +68,24 @@
 	<h2>About the presenter:</h2>
 	<ul>
 		<li class="slide" id="works-for">
-			<h3>Employed by Aquto</h3>
-			<p>Scala shop in the Innovation District</p>
+			<h3>Employed by&nbsp;&nbsp;<img src="images/aquto.png" style="padding: 0; margin: 0; display: inline-block; width: 125px; height: 35px"/></h3>
+			<ul>
+				<li>Scala shop in the Innovation District</li>
+				<li>Changing the way people use mobile data</li>
+			</ul>
+			
 		</li>
 		<li class="slide" id="java-exp">
 			<h3>Long time Java programmer</h3>
-			<p>Until recently it was the center of my programming universe</p>
+			<ul>
+				<li>Until recently it was the center of my programming universe</li>
+			</ul>			
 		</li>
 		<li class="slide" id="scala-exp">
 			<h3>Scala enthusiast for about 18 months now</h3>
-			<p>Left Java to run off with Scala</p>
+			<ul>
+				<li>Left Java to run off with Scala</li>
+			</ul>
 		</li>
 	</ul>
 </section>
@@ -87,29 +96,44 @@
 	<img src="images/flux.jpeg" width="900px" height="600px"/>
 </section>
 
+<section class="slide" id="whatisfuture">
+	<h2>So what exactly is a Future?</h2>
+	<ul>
+		<li class="slide">
+			<h5>Futures provide a nice way to reason about performing many operations in parallel, in an efficient and non-blocking way.</h5>
+		</li>
+		<li class="slide">
+			<h5>A <code>Future</code> is a sort of placeholder object that you can create for a result that doesn't yet exist.</h5>
+		</li>
+		<li class="slide">
+			<h5>The idea is simple.  The result of the <code>Future</code> is computed concurrently and can be later collected.</h5>
+		</li>
+		<li class="slide">
+			<h5>Composing concurrent tasks in this way tends to result in faster, asynchronous, non-blocking parallel code.</h5>
+		</li>						
+	</ul>
+</section>
+
 <section class="slide" id="creating-futures">
 	<h2>Creating a Future</h2>
 	
-	<div style="float:left; width: 25%">
 		<pre><code class="prettyprint lang-scala linenums">import scala.concurrent._
-		
 val service = WaitService()
 var f:Future[Int] = future{
-  service.echo(2)
+  service.echo(2) 
 }</code></pre>	
-	</div>
-	<div style="float:left; border-left: 1px solid black; margin-left: 50px; height: 500px; padding-left: 20px">
+
 		<div class="slide" id="how-works"><h3>How does it all work?</h3></div>
 		<ul>
 			<li class="slide" id="create-1">
-				<h4>The signature of the future creation function is</h4>
-				<pre><code class="prettyprint lang-scala linenums">def future[T](body: => T)(implicit exec:ExecutionContext):Future[T]</code></pre>				
+				<h5>The signature of the future creation function is</h5>
+				<pre><code class="prettyprint lang-scala linenums">def future[T](body: => T)(implicit ex:ExecutionContext):Future[T]</code></pre>				
 			</li>
 			<li class="slide" id="create-2">
-				<h4>The future function comes from the package object in scala.concurrent</h4>
+				<h5>The future function comes from the package object in scala.concurrent</h5>
 			</li>					
 			<li class="slide" id="create-3">
-				<h4>You need an implicit ExecutionContext in scope<br/>&nbsp;&nbsp;...it's your ticket to party async style</h4>
+				<h5>You need an implicit ExecutionContext in scope (it's your ticket to the async party).</h5>
 				<pre><code class="prettyprint lang-scala linenums">import scala.concurrent._
 import java.util.concurrent.Executors
 
@@ -117,201 +141,145 @@ val tp = Executors.newCachedThreadPool()
 implicit val ex = ExecutionContext.fromExecutor(tp)</code></pre>
 			</li>			
 		</ul>	
-	</div>	
-	<div style="clear: both"/>
 </section>
 
 <section class="slide" id="futures-oncomplete">
 	<h2>Obtaining a Result: onComplete Callback</h2>
-	
-	<div style="float:left">
+
 		<pre><code class="prettyprint lang-scala linenums">f onComplete {
-  case Success(i) => 
-    println("Got " + i)
-  case Failure(e) => 
-    println("Error: " + e.getMessage)
+  case Success(i) => println("Got " + i)
+  case Failure(e) => println("Error: " + e.getMessage)
 }</code></pre>		
-	</div>
-	<div style="float:left; border-left: 1px solid black; margin-left: 50px; height: 1000px; padding-left: 20px">
+
 		<ul>
 			<li class="slide" id="oncomp-1">
-				<h4>The signatures of onComplete is:</h4>
-				<pre><code class="prettyprint lang-scala linenums">def onComplete[U](func: Try[T] => U)(implicit exec:ExecutionContext):Unit</code></pre>				
+				The signatures of onComplete is:<br/><br/>
+				<pre><code class="prettyprint lang-scala linenums">def onComplete[U](func: Try[T] => U)(implicit ex:ExecutionContext):Unit</code></pre>				
 			</li>
 			<li class="slide" id="oncomp-2">
-				<h4>This callback is called asynchronously, in a non-blocking way, once <br/>the future is completed</h4>
+				This callback is called asynchronously, in a non-blocking way, once the future is completed
 			</li>
 			<li class="slide" id="oncomp-3">
-				<h4>If the future has already been completed when registering the callback, <br/>then the callback may either be executed asynchronously, or sequentially on the same thread</h4>
+				If the future has already been completed when registering the callback, then the callback may either be executed asynchronously, or sequentially on the same thread
 			</li>
 			<li class="slide" id="oncomp-4">
-				<h4>The callback will get a <code>Success</code> when the operation completes <br/>successfully and a <code>Failure</code> if an exception occurs</h4>
+				The callback will get a <code>Success</code> when the operation completes successfully and a <code>Failure</code> if an exception occurs
 			</li>	
 			<li class="slide" id="oncomp-5">
-				<h4><code>Success</code> and <code>Failure</code> are from the new <br/><code>Try</code> type (kind of like a specialized <code>Either</code>)</h4>
+				<code>Success</code> and <code>Failure</code> are from the new <code>Try</code> type (kind of like a specialized <code>Either</code>)
 			</li>							
 			<li class="slide" id="oncomp-6">
-				<h4>The <code>onComplete</code> callback is general in the sense that it let's you handle<br/> both success and failure results.  To handle one or the other, use <br/>the <code>onSuccess</code> and <code>onFailure</code> callbacks</h4>
+				The <code>onComplete</code> callback is general in the sense that it let's you handle both success and failure results.  To handle one or the other, use the <code>onSuccess</code> and <code>onFailure</code> callbacks
 			</li>														
 		</ul>
-	</div>	
-	<div style="clear: both"/>
 </section>
 
 <section class="slide" id="futures-onsuccessfail">
-	<h2>Obtaining a Result: onSuccess, onFailure Callbacks</h2>
+	<h2>The onSuccess and onFailure Callbacks</h2>
 	
-	<div style="float:left">
 		<pre><code class="prettyprint lang-scala linenums">f onSuccess {
-  case i => 
-    println("Success: " + 1)
+  case i => println("Success: " + 1)
 }
 f onFailure {
-  case e => 
-    println("Error: " + e.getMessage)
+  case e => println("Error: " + e.getMessage)
 }</code></pre>			
-	</div>
-	<div style="float:left; border-left: 1px solid black; margin-left: 50px; height: 1000px; padding-left: 20px">
 		<ul>
 			<li class="slide" id="onsuccessfail-1">
-				<h4>The signatures of these callbacks are:</h4>
-				<pre><code class="prettyprint lang-scala linenums">def onSuccess[U](pf: PartialFunction[T,U])(implicit exec:ExecutionContext):Unit
-def onFailure[U](pf: PartialFunction[Throwable,U])(implicit exec:ExecutionContext):Unit</code></pre>				
+				The signatures of these callbacks are:<br/><br/>
+				<pre><code class="prettyprint lang-scala linenums">def onSuccess[U](pf: PartialFunction[T,U])(implicit ex:ExecutionContext):Unit
+def onFailure[U](pf: PartialFunction[Throwable,U])(implicit ex:ExecutionContext):Unit</code></pre>				
 			</li>	
 			<li class="slide" id="onsuccessfail-2">
-				<h4>The <code>onFailure</code> is callback is only invoked when the callback fails.  Same goes for <code>onSuccess</code>.</h4>				
-			</li>
-			<li class="slide" id="onsuccessfail-3">
-				<h4>Since these callbacks take <code>PartialFunction</code> as an arg, they will only be invoked<br/>if the <code>PartialFunction</code> is defined for a particular result type (via <code>isDefinedAt</code>)</h4>
-				<pre><code class="prettyprint lang-scala linenums">val fut:Future[Double] = future{
-  2 / 0
-}
-    
-fut onFailure {
-  case npe:NullPointerException => 
-    println("Never going to get here")    
-}</code></pre>				
-			</li>
-			<li class="slide" id="onsuccessfail-4">
-				<h4>Why use <code>PartialFunction</code> for these callbacks instead of a regular function callback?</h4>
-				<ul>
-					<li class="slide" id="onsuccessfail-5">
-						<h5>A regular function callback would require the default case in every callback, potentially <br/>leading to <code>MatchError</code></h5>
-					</li>
-					<li class="slide">
-						<h5>For <code>onFailure</code>, <code>try-catch</code> blocks also expect a <code>PartialFunction</code> value. That means <br/>that if there are generic partial function exception handlers present in the application then they <br/>will be compatible with the <code>onFailure</code> method</h5>
-					</li>
-				</ul>
+				The <code>onFailure</code> is callback is only invoked when the callback fails.  Same goes for <code>onSuccess</code>.				
 			</li>																	
 		</ul>
-	</div>	
-	<div style="clear: both"/>
 </section>
 
 <section class="slide" id="futures-callbacks">
 	<h2>Callbacks Continued...</h2>
 	<ul>
+			<li class="slide" id="onsuccessfail-3">
+				Since these callbacks take <code>PartialFunction</code> as an arg, they will only be invokedif the <code>PartialFunction</code> is defined for a particular result type (via <code>isDefinedAt</code>)<br/><br/>
+				<pre><code class="prettyprint lang-scala linenums">val fut:Future[Double] = future{ 2 / 0}   
+fut onFailure {
+  case npe:NullPointerException => println("Never going to get here")    
+}</code></pre>				
+			</li>
+			<li class="slide" id="onsuccessfail-4">
+				Why use <code>PartialFunction</code> for these callbacks instead of a regular function callback?
+				<ul>
+					<li class="slide" id="onsuccessfail-5">
+						A regular function callback would require the default case in every callback, potentially leading to <code>MatchError</code><
+					</li>
+					<li class="slide">
+						For <code>onFailure</code>, <code>try-catch</code> blocks also expect a <code>PartialFunction</code> value. That means that if there are generic partial function exception handlers present in the application then they will be compatible with the <code>onFailure</code> method
+					</li>
+				</ul>
+			</li>	
 		<li class="slide" id="cb1">
-			<h4>You can register multuple callbacks on a single <code>Future</code></h4>
-			<ul>
-				<li class="slide" id="cb2">
-					<h5>The execution order is not defined when multiple callbacks are registered</h5>
-				</li>
-				<li class="slide" id="cb3">
-					<h5>The callbacks might actually be invoked in parallel with one another</h5>
-				</li>				
-			</ul>
+			You can register multuple callbacks on a single <code>Future</code>.  The execution order is not defined when multiple callbacks are registered			
 		</li>
 		<li class="slide" id="cb8">
-			<h4>The return type of <code>Unit</code> was intentional to prevent chaining.</h4>
-			<ul>
-				<li class="slide" id="cb9">
-					<h5>Chaining might have mistakenly implied an execution order which is not true</h5>
-				</li>			
-			</ul>
+			The return type of <code>Unit</code> was intentional to prevent chaining.  Chaining might have mistakenly implied an execution order which is not true
 		</li>		
 		<li class="slide" id="cb4">
-			<h4>In the event that some of the callbacks throw an exception, the other callbacks are executed regardlessly</h4>
+			In the event that some of the callbacks throw an exception, the other callbacks are executed regardlessly
 		</li>	
 		<li class="slide" id="cb5">
-			<h4>In the event that some of the callbacks never complete (e.g. the callback contains an infinite loop), the other callbacks may not be executed at all</h4>
-			<ul>
-				<li class="slide" id="cb6">
-					<h5>In these cases, a potentially blocking callback must use the blocking construct (covered in a later slide)</h5>
-				</li>			
-			</ul>
-		</li>	
-		<li class="slide" id="cb7">
-			<h4>Once executed, the callbacks are removed from the future object, thus being eligible for GC</h4>
+			In the event that some of the callbacks never complete (e.g. the callback contains an infinite loop), the other callbacks may not be executed at all
 		</li>				
 	</ul>
 </section>
 
 <section class="slide" id="futures-combinator">
 	<h2>Functional Composition of Futures.</h2>
-	<h3>Let's say we want to check the price of a product and only purchase it if it's below $100</h3><br/><br/>
-	<div style="float:left; width: 40%">
-		<h4>Plain callbacks</h4>
-		<pre><code class="prettyprint lang-scala linenums">val priceCheck = future{
-  priceService.checkPrice(productId)
-}
-    
+	<h5>Let's say we want to check the price of a product and only purchase it if it's below $100</h5>
+		<pre><code class="prettyprint lang-scala linenums">//Using nesting...
+val priceCheck = future{priceService.checkPrice(productId)}   
 priceCheck onSuccess {
   case price =>
     val purchase = future{
-      if (price < 100) 
-        priceService.purchaseItem(productId)
-      else 
-        throw new Exception("to rich for my blood")
+      if (price < 100) priceService.purchaseItem(productId)
+      else throw new Exception("too rich for my blood")
     }
-    
     purchase onSuccess{
-      case bool => 
-        println("Purchase was a success")
+      case bool => println("Purchase was a success")
     }
-}</code></pre>		
-	</div>
-	<div class="slide" style="float:left; border-left: 1px solid black; margin-left: 50px; height: 1000px; padding-left: 20px">
-		<h4>Using the <code>map</code> combinator</h4>
-		<pre><code class="prettyprint lang-scala linenums">val priceCheck = future{
-  priceService.checkPrice(productId)
-}
+}</code></pre>	
+</section>
 
+<section class="slide" id="futures-combinator-map">
+	<h2>Functional Composition of Futures.</h2>
+	<h5>Now let's see that using the <code>map</code> combinator</h5>
+		<pre><code class="prettyprint lang-scala linenums">val priceCheck = future{ priceService.checkPrice(productId) }
 val purchase = priceCheck map {
   price =>
     if (price < 100) priceService.purchaseItem(productId)
-    else throw new Exception("to rich for my blood")
+    else throw new Exception("too rich for my blood")
 }    
 
 purchase onSuccess{
-  case bool => 
-    println("Purchase was a success")
+  case bool => println("Purchase was a success")
 }</code></pre>
 
-	<h3>The <code>map</code> combinator works as follows:</h3>
+	<h3 class="slide">The <code>map</code> combinator works as follows:</h3>
 	<ul>
 		<li class="slide">
-			<h4>If the original future is completed successfully then the returned future is <br/>completed with a mapped value from the original future.</h4>
+			If the original future is completed successfully then the returned future is completed with a mapped value from the original future.
 		</li>
 		<li class="slide">
-			<h4>If the mapping function throws an exception the future is completed <br/>with that exception.</h4>
+			If the mapping function throws an exception the future is completed with that exception.
 		</li>
 		<li class="slide">
-			<h4>If the original future fails with an exception then the returned future <br/>also contains the same exception</h4>
+			If the original future fails with an exception then the returned future also contains the same exception
 		</li>				
 	</ul>	
-	</div>	
-	<div style="clear: both"/>
 </section>
 
 <section class="slide" id="futures-forcomp">
-	<h2>You can use Futures in for-comprehensions too</h2>
-	<div style="float:left; width: 40%">
-		<pre><code class="prettyprint lang-scala linenums">val prod1 = 
-  future{priceService.checkPrice(prodId1)}
-val prod2 = 
-  future{priceService.checkPrice(prodId2)}
-
+	<h2>Futures in for-comprehensions</h2>
+	<pre><code class="prettyprint lang-scala linenums">val prod1 = future{priceService.checkPrice(prodId1)}
+val prod2 = future{priceService.checkPrice(prodId2)}
 val purchase = for{
   price1 <- prod1
   price2 <- prod2
@@ -319,29 +287,366 @@ val purchase = for{
 } yield priceService.purchaseBoth(prodId1, prodId2)
 
 purchase onSuccess{
-  case bool => 
-    println("Purchase was a success")
+  case bool => println("Purchase was a success")
 }</code></pre>		
-	</div>
-	<div class="slide" style="float:left; border-left: 1px solid black; margin-left: 50px; height: 1000px; padding-left: 20px">
-		<ul>
-			<li class="slide">
-				<h4>To enable for-comprehensions, futures also have the <code>flatMap</code>, <code>filter</code> <br/>and <code>foreach</code> combinators</h4>
-			</li>
-			<li class="slide">
-				<h4>The <code>flatMap</code> method takes a function that maps the value to a new future <code>g</code>,<br/> and then returns a future which is completed once <code>g</code> is completed.</h4>
-			</li>
-			<li class="slide">
-				<h4>The <code>filter</code> combinator creates a new future which contains the value of<br/> the original future only if it satisfies some predicate. Otherwise, the new future<br/> is failed with a <code>NoSuchElementException</code></h4>
-			</li>	
-			<li class="slide">
-				<h4>The <code>foreach</code> combinator (not shown) does not block. Instead, <br/>the function for the foreach gets asynchronously executed only if the future is <br/>completed successfully. This means that the foreach has exactly the same<br/> semantics as the onSuccess callback.</h4>
-			</li>						
-		</ul>		
-	</div>	
-	<div style="clear: both"/>
+	<ul>
+		<li class="slide">
+			To enable for-comprehensions, futures also have the <code>flatMap</code>, <code>filter</code> and <code>foreach</code> combinators
+		</li>
+		<li class="slide">
+			The <code>flatMap</code> method takes a function that maps the value to a new future <code>g</code>, and then returns a future which is completed once <code>g</code> is completed.
+		</li>
+		<li class="slide">
+			The <code>filter</code> combinator creates a new future which contains the value of the original future only if it satisfies some predicate. Otherwise, the new future is failed with a <code>NoSuchElementException</code>
+		</li>	
+		<li class="slide">
+			The <code>foreach</code> combinator (not shown) does not block. Instead, the function for the <code>foreach</code> gets asynchronously executed only if the future is completed successfully. This means that the <code>foreach</code> has exactly the same semantics as the onSuccess callback.
+		</li>						
+	</ul>			
 </section>
 
+<section class="slide" id="futures-recover">
+	<h2>Recovering from exceptions</h2>
+	<pre><code class="prettyprint lang-scala linenums">val prod = future{priceService.checkPrice(productId1)}
+val purchase = prod map{
+  price => priceService.purchaseItem(productId1)
+} recover {
+  case ne:NotAvailableException => false
+}</code></pre>		
+	<ul>
+		<li class="slide">
+			If an operation inside the <code>future</code> might throw an exception, you can opt to recover from it and return a non-exception instead with the <code>recover</code> combinator.
+		</li>
+		<li class="slide">
+			The <code>recover</code> combinator creates a new future which holds the same result as the original future if it completed successfully.
+		</li>
+		<li class="slide">
+			If it did not then the partial function argument is applied to the Throwable which failed the original future. If it maps the Throwable to some value, then the new future is successfully completed with that value.
+		</li>	
+		<li class="slide">
+			You could also use <code>recoverWith</code> which will instead map the failure case to a new <code>Future</code>.  The relationship between <code>recover</code> and <code>recoverWith</code> is similar to <code>map</code> and <code>flatMap</code>.
+		</li>						
+	</ul>			
+</section>
+
+<section class="slide" id="futures-fallbackTo">
+	<h2>Using the fallbackTo combinator</h2>
+	<pre><code class="prettyprint lang-scala linenums">val prod1Res = future{
+  priceService.checkPrice(productId1)
+} map{ price => "Product 1 price: " + price}
+val prod2Res = future{
+  priceService.checkPrice(productId2)
+} map{ price => "Product 2 price: " + price}   
+
+val result = prod1Res fallbackTo prod2Res
+result onSuccess {case str => println(str)}</code></pre>		
+	<ul>
+		<li class="slide">
+			In the above example, the <code>"Product 1 Price"</code> will be printed as long as the <code>prod1Res Future</code> succeeds.
+		</li>
+		<li class="slide">
+			If it fails, and the <code>prod2Res Future</code> succeeds, then the <code>"Product 2 Price"</code> string will be printed instead.
+		</li>
+		<li class="slide">
+			If both fail, then the result <code>Future</code> will be completed with the exception from the <code>prod1Res Future</code>.
+		</li>						
+	</ul>			
+</section>
+
+<section class="slide" id="futures-either">
+	<h2>Using the either combinator</h2>
+	<pre><code class="prettyprint lang-scala linenums">val prod1Res = future{
+  priceService.checkPrice(productId1)
+} map{ price => "Product 1 price: " + price}
+val prod2Res = future{
+  priceService.checkPrice(productId2)
+} map{ price => "Product 2 price: " + price}   
+
+val result = prod1Res either prod2Res
+result onSuccess {case str => println(str)}</code></pre>		
+	<ul>
+		<li class="slide">
+			The <code>either</code> combinator creates a new <code>Future</code> with the result of either <code>prod1Res</code> or <code>prod2Res</code>, whichever completes first, regardless of failure .
+		</li>						
+	</ul>			
+</section>
+
+<section class="slide" id="futures-andThen">
+	<h2>Using the andThen combinator</h2>
+	<pre><code class="prettyprint lang-scala linenums">val allprices = mutable.Set[Double]()
+future {
+  priceService.getAllPrices
+} andThen {
+  prices => allprices ++= prices
+} andThen {
+  prices =>
+  for (price <- allprices) println(price)
+}</code></pre>		
+	<ul>
+		<li class="slide">
+			The <code>andThen</code> combinator is used purely for side-effecting purposes.
+		</li>
+		<li class="slide">
+			It returns a new future with exactly the same result as the current future, irregardless of whether the current future failed or not.
+		</li>
+		<li class="slide">
+			Once the current future is completed with the result, the closure corresponding to the <code>andThen</code> is invoked and then the new future is completed with the same result as this future.
+		</li>	
+		<li class="slide">
+			This ensures that multiple <code>andThen</code> calls are ordered.
+		</li>
+		<li class="slide">
+			Note that if one of the chained <code>andThen</code> callbacks throws an exception, that exception is not propagated to the subsequent <code>andThen</code> callbacks. Instead, the subsequent <code>andThen</code> callbacks are given the original value of this future.
+		</li>														
+	</ul>			
+</section>
+
+<section class="slide" id="futures-proj">
+	<h2>Projections on Futures</h2>
+	<ul>
+		<li class="slide">
+			To enable for-comprehensions on a result returned as an exception, futures also have projections.
+		</li>
+		<li class="slide">
+			 If the original future fails, the <code>failed</code> projection returns a future containing a value of type <code>Throwable</code>
+		</li>	
+		<li class="slide">
+			 If the original future succeeds, the <code>failed</code> projection fails with a <code>NoSuchElementException</code>.
+		</li>				
+	</ul>
+	<pre class="slide"><code class="prettyprint lang-scala linenums">val f = future {
+  2 / 0
+}
+
+//This will print out
+for (exc <- f.failed) println(exc)</code></pre>
+
+	<pre class="slide"><code class="prettyprint lang-scala linenums">val f = future {
+  4 / 2
+}
+
+//This will not print out
+for (exc <- f.failed) println(exc)</code></pre>			
+</section>
+
+<section class="slide" id="futures-blocking">
+	<h2>Blocking to wait for the result</h2>
+	<ul>
+		<li class="slide">
+			 Blocking on a future is strongly discouraged, for the sake of performance and for the prevention of deadlocks, in favour of using callbacks and combinators on futures.
+		</li>
+		<li class="slide">
+			 However, blocking may be necessary in certain situations and is supported by the Futures API.
+		</li>	
+		<li class="slide">
+			 You can use the <code>Await.result</code> in order to block and wait until a <code>Future</code> has been completed (will throw a <code>TimeoutException</code> if the timeout expires).
+		</li>				
+	</ul>
+	<pre class="slide"><code class="prettyprint lang-scala linenums">val priceCheck = future{
+  priceService.checkPrice(productId1)
+}
+
+val purchase = priceCheck map {
+  price =>
+    if (price < 100) priceService.purchaseItem(productId1)
+    else throw new Exception("too rich for my blood")
+}   
+
+//Will block for one second
+val result = Await.result(purchase, 1 second)</code></pre>	
+</section>
+
+<section class="slide" id="promises-intro">
+	<h2>Ok, I get Futures, but what's a Promise?</h2>
+	<ul>
+		<li class="slide">
+			 While futures are defined as a type of read-only placeholder object created for a result which doesn't yet exist, a promise can be thought of as a writeable, single-assignment container, which completes a future.
+		</li>
+		<li class="slide">
+			 A promise can be used to successfully complete a future with a value (by "completing" the promise) using the <code>success</code> method. 
+		</li>	
+		<li class="slide">
+			 A promise can also be used to complete a future with an exception, by failing the promise, using the <code>failure</code> method.
+		</li>	
+		<li class="slide">
+			A promise <code>p</code> completes the future returned by <code>p.future</code>. This future is specific to the promise <code>p</code>.	 
+		</li>			
+	</ul>
+</section>
+
+<section class="slide" id="promise-example">
+	<h2>An example of a Promise in action</h2>
+	<pre><code class="prettyprint lang-scala linenums">val p = promise[T]
+val f = p.future
+val producer = future {
+  val r = produceSomething()
+  p success r
+  continueDoingSomethingUnrelated()
+}
+val consumer = future {
+  startDoingSomething()
+  f onSuccess {case r => doSomethingWithResult()}
+}</code></pre>	
+
+	<ul>
+		<li class="slide">
+			 Here, we create a promise and use its <code>future</code> method to obtain the <code>Future</code> that it completes.
+		</li>
+		<li class="slide">
+			 Then, we begin two asynchronous computations. The first does some computation, resulting in a value <code>r</code>, which is then used to complete the future <code>f</code>, by fulfilling <code>p</code>. 
+		</li>	
+		<li class="slide">
+			 The second does some computation, and then reads the result <code>r</code> of the completed future <code>f</code>.
+		</li>	
+		<li class="slide">
+			Note that the consumer can obtain the result before the producer task is finished executing the <code>continueDoingSomethingUnrelated()</code> method.	 
+		</li>
+		<li class="slide">
+			A <code>Promise</code> can be completed only once. Calling <code>success</code> on a promise that has already been completed (or failed) will throw an <code>IllegalStateException</code>.	 
+		</li>					
+	</ul>
+</section>
+
+<section class="slide" id="promise-fail">
+	<h2>Failing a Promise</h2>
+	<pre><code class="prettyprint lang-scala linenums">val p = promise[T]
+val f = p.future
+val producer = future {
+  val r = someComputation
+  if (isInvalid(r))
+    p failure (new IllegalStateException)
+  else {
+    val q = doSomeMoreComputation(r)
+    p success q
+  }
+}</code></pre>	
+
+	<ul>
+		<li class="slide">
+			 Completing a <code>Promise</code> with an <code>Exception</code> will fail the <code>Promise</code>.
+		</li>
+		<li class="slide">
+			 The associated future <code>f</code> will also be failed. 
+		</li>		
+		<li class="slide">
+			Promises can also be completed with a <code>complete</code> method which takes a <code>Try[T]</code> that can be either a failed result of type <code>Failure[Throwable]</code> or a successful result of type <code>Success[T]</code>.	 
+		</li>					
+	</ul>
+</section>
+
+<section class="slide" id="promise-try">
+	<h2>Completing Promises with the try functions</h2>
+	<pre><code class="prettyprint lang-scala linenums">val p = Promise[Int]
+val pf = p.future
+val fut1 = future{
+  val i = someLongRunningIntOp()
+  p trySuccess i
+}
+val fut2 = future{
+  val i = someOtherLongRunningIntOp()
+  p trySuccess i
+}
+
+pf onSuccess { case i => println("Got value: " + i)}</code></pre>	
+
+	<ul>
+		<li class="slide">
+			 It's possible for multiple futures to want to complete the same <code>Promise</code> (think a situation where you just want the first result that comes back).
+		</li>
+		<li class="slide">
+			 If both futures used the <code>success</code> operation, then one of them would result in an <code>IllegalStateException</code> because the <code>Promise</code> can only be completed once.
+		</li>		
+		<li class="slide">
+			To remdey this, in these situations, the futures can instead call <code>trySuccess</code> to prevent failures.  The only issue here is that code like this is non-deterministic, so use with care.	 
+		</li>
+		<li class="slide">
+			There is <code>tryFailure</code> and <code>tryComplete</code> on <code>Promise</code> as well. 
+		</li>							
+	</ul>
+</section>
+
+<section class="slide" id="duration">
+	<h2>The Duration Abstraction</h2>
+	<ul>
+		<li class="slide">
+			 A <code>Duration</code> abstraction has also been introduced to simplify time based operations within the <code>concurrent</code> package.
+		</li>
+		<li class="slide">
+			 <code>Duration</code> is the base class representing length of time. It can be either finite or infinite.
+		</li>		
+		<li class="slide">
+			Finite duration is represented with <code>FiniteDuration<code> class which is constructed from <code>Long</code> length and <code>java.util.concurrent.TimeUnit</code>.	 
+		</li>
+		<li class="slide">
+			Infinite durations, also extended from <code>Duration</code>, exist in only two instances, </code>Duration.Inf</code> and <code>Duration.MinusInf</code>. 
+		</li>
+		<li class="slide">
+			Abstract <code>Duration</code> contains methods that allow:
+			<ul>
+				<li>
+					Conversion to different time units (<code>toNanos, toMicros, toMillis, toSeconds, toMinutes, toHours, toDays</code> and <code>toUnit(unit: TimeUnit)</code>).
+				</li>
+				<li>
+					Comparison of durations (<code><, <=, ></code> and <code>>=</code>).
+				</li>
+				<li>
+					Arithmetic operations (+, -, *, / and unary_-).
+				</li>
+				<li>
+					Minimum and maximum between <code>this</code> duration and the one supplied in the argument (min, max).
+				</li>
+				<li>
+					Check if the duration is finite (<code>finite_?</code>).
+				</li>																
+			</ul> 
+		</li>
+		<li class="slide">
+			<code>Duration</code> can be instantiated in the following ways:
+			<ul>
+				<li>
+					Implicitly from types <code>Int</code> and <code>Long</code>. For example <code>val d = 100 millis</code>.
+				</li>
+				<li>
+					By passing a <code>Long</code> length and a <code>java.util.concurrent.TimeUnit</code>. For example <code>val d = Duration(100, MILLISECONDS)</code>.
+				</li>
+				<li>
+					By parsing a string that represent a time period. For example <code>val d = Duration("1.2 ms")</code>.
+				</li>																
+			</ul> 
+		</li>
+		<li class="slide">
+			<code>Duration</code> also provides <code>unapply</code> methods so it can be used in pattern matching constructs.
+		</li>											
+	</ul>
+</section>
+
+<section class="slide" id="duration-ex">
+	<h2>Duration Code Examples</h2>
+<pre><code class="prettyprint lang-scala linenums">import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
+import java.util.concurrent.TimeUnit._
+// instantiation
+val d1 = Duration(100, MILLISECONDS) // from Long and TimeUnit
+val d2 = Duration(100, "millis") // from Long and String
+val d3 = 100 millis // implicitly from Long, Int or Double
+val d4 = Duration("1.2 µs") // from String
+// pattern matching
+val Duration(length, unit) = 5 millis</code></pre>
+</section>
+
+<section class="slide" id="notes">
+	<h2>Misc Notes</h2>
+<ul>
+	<li><h5>The <code>concurrent</code> package was built from similar functionality in Akka, Finagle and Scalaz</h5></li>
+	<li><h5>This slide deck was built using deck.js and prettify.js</h5></li>
+	<li><h5>You can view this presentation any time at: <a href="">http://cmbaxter.github.com/futures-promises</a></h5></li>
+	<li><h5>If you have any additional questions, feel free to email me at: <a href="">chris@aquto.com</a></h5></li>
+</ul>
+</section>
+
+Implicitly from types Int and Long. For example val d = 100 millis.
+By passing a Long length and a java.util.concurrent.TimeUnit. For example val d = Duration(100, MILLISECONDS).
+By parsing a string that represent a time period. For example val d = Duration("1.2 µs").
 
 <a href="#" class="deck-prev-link" title="Previous">&#8592;</a>
 <a href="#" class="deck-next-link" title="Next">&#8594;</a>
