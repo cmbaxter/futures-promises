@@ -99,16 +99,16 @@
 <section class="slide" id="whatisfuture">
 	<h2>So what exactly is a Future?</h2>
 	<ul>
-		<li class="slide">
+		<li>
 			<h5>Futures provide a nice way to reason about performing many operations in parallel, in an efficient and non-blocking way.</h5>
 		</li>
-		<li class="slide">
+		<li>
 			<h5>A <code>Future</code> is a sort of placeholder object that you can create for a result that doesn't yet exist.</h5>
 		</li>
-		<li class="slide">
+		<li>
 			<h5>The idea is simple.  The result of the <code>Future</code> is computed concurrently and can be later collected.</h5>
 		</li>
-		<li class="slide">
+		<li>
 			<h5>Composing concurrent tasks in this way tends to result in faster, asynchronous, non-blocking parallel code.</h5>
 		</li>						
 	</ul>
@@ -123,16 +123,16 @@ var f:Future[Int] = future{
   service.echo(2) 
 }</code></pre>	
 
-		<div class="slide" id="how-works"><h3>How does it all work?</h3></div>
+		<div class="slide" id="how-works"><h3>How does it all work?</h3>
 		<ul>
-			<li class="slide" id="create-1">
+			<li id="create-1">
 				<h5>The signature of the future creation function is</h5>
 				<pre><code class="prettyprint lang-scala linenums">def future[T](body: => T)(implicit ex:ExecutionContext):Future[T]</code></pre>				
 			</li>
-			<li class="slide" id="create-2">
+			<li id="create-2">
 				<h5>The future function comes from the package object in scala.concurrent</h5>
 			</li>					
-			<li class="slide" id="create-3">
+			<li id="create-3">
 				<h5>You need an implicit ExecutionContext in scope (it's your ticket to the async party).</h5>
 				<pre><code class="prettyprint lang-scala linenums">import scala.concurrent._
 import java.util.concurrent.Executors
@@ -140,7 +140,9 @@ import java.util.concurrent.Executors
 val tp = Executors.newCachedThreadPool()
 implicit val ex = ExecutionContext.fromExecutor(tp)</code></pre>
 			</li>			
-		</ul>	
+		</ul>		
+		</div>
+	
 </section>
 
 <section class="slide" id="futures-oncomplete">
@@ -152,23 +154,23 @@ implicit val ex = ExecutionContext.fromExecutor(tp)</code></pre>
 }</code></pre>		
 
 		<ul>
-			<li class="slide" id="oncomp-1">
+			<li id="oncomp-1">
 				The signatures of onComplete is:<br/><br/>
 				<pre><code class="prettyprint lang-scala linenums">def onComplete[U](func: Try[T] => U)(implicit ex:ExecutionContext):Unit</code></pre>				
 			</li>
-			<li class="slide" id="oncomp-2">
+			<li id="oncomp-2">
 				This callback is called asynchronously, in a non-blocking way, once the future is completed
 			</li>
-			<li class="slide" id="oncomp-3">
+			<li id="oncomp-3">
 				If the future has already been completed when registering the callback, then the callback may either be executed asynchronously, or sequentially on the same thread
 			</li>
-			<li class="slide" id="oncomp-4">
+			<li id="oncomp-4">
 				The callback will get a <code>Success</code> when the operation completes successfully and a <code>Failure</code> if an exception occurs
 			</li>	
-			<li class="slide" id="oncomp-5">
+			<li id="oncomp-5">
 				<code>Success</code> and <code>Failure</code> are from the new <code>Try</code> type (kind of like a specialized <code>Either</code>)
 			</li>							
-			<li class="slide" id="oncomp-6">
+			<li id="oncomp-6">
 				The <code>onComplete</code> callback is general in the sense that it let's you handle both success and failure results.  To handle one or the other, use the <code>onSuccess</code> and <code>onFailure</code> callbacks
 			</li>														
 		</ul>
@@ -184,12 +186,12 @@ f onFailure {
   case e => println("Error: " + e.getMessage)
 }</code></pre>			
 		<ul>
-			<li class="slide" id="onsuccessfail-1">
+			<li id="onsuccessfail-1">
 				The signatures of these callbacks are:<br/><br/>
 				<pre><code class="prettyprint lang-scala linenums">def onSuccess[U](pf: PartialFunction[T,U])(implicit ex:ExecutionContext):Unit
 def onFailure[U](pf: PartialFunction[Throwable,U])(implicit ex:ExecutionContext):Unit</code></pre>				
 			</li>	
-			<li class="slide" id="onsuccessfail-2">
+			<li id="onsuccessfail-2">
 				The <code>onFailure</code> is callback is only invoked when the callback fails.  Same goes for <code>onSuccess</code>.				
 			</li>																	
 		</ul>
@@ -198,34 +200,34 @@ def onFailure[U](pf: PartialFunction[Throwable,U])(implicit ex:ExecutionContext)
 <section class="slide" id="futures-callbacks">
 	<h2>Callbacks Continued...</h2>
 	<ul>
-			<li class="slide" id="onsuccessfail-3">
+			<li id="onsuccessfail-3">
 				Since these callbacks take <code>PartialFunction</code> as an arg, they will only be invokedif the <code>PartialFunction</code> is defined for a particular result type (via <code>isDefinedAt</code>)<br/><br/>
 				<pre><code class="prettyprint lang-scala linenums">val fut:Future[Double] = future{ 2 / 0}   
 fut onFailure {
   case npe:NullPointerException => println("Never going to get here")    
 }</code></pre>				
 			</li>
-			<li class="slide" id="onsuccessfail-4">
+			<li id="onsuccessfail-4">
 				Why use <code>PartialFunction</code> for these callbacks instead of a regular function callback?
 				<ul>
-					<li class="slide" id="onsuccessfail-5">
-						A regular function callback would require the default case in every callback, potentially leading to <code>MatchError</code><
+					<li id="onsuccessfail-5">
+						A regular function callback would require the default case in every callback, potentially leading to <code>MatchError</code>
 					</li>
-					<li class="slide">
+					<li>
 						For <code>onFailure</code>, <code>try-catch</code> blocks also expect a <code>PartialFunction</code> value. That means that if there are generic partial function exception handlers present in the application then they will be compatible with the <code>onFailure</code> method
 					</li>
 				</ul>
 			</li>	
-		<li class="slide" id="cb1">
-			You can register multuple callbacks on a single <code>Future</code>.  The execution order is not defined when multiple callbacks are registered			
+		<li id="cb1">
+			You can register multiple callbacks on a single <code>Future</code>.  The execution order is not defined when multiple callbacks are registered			
 		</li>
-		<li class="slide" id="cb8">
+		<li id="cb8">
 			The return type of <code>Unit</code> was intentional to prevent chaining.  Chaining might have mistakenly implied an execution order which is not true
 		</li>		
-		<li class="slide" id="cb4">
+		<li id="cb4">
 			In the event that some of the callbacks throw an exception, the other callbacks are executed regardlessly
 		</li>	
-		<li class="slide" id="cb5">
+		<li id="cb5">
 			In the event that some of the callbacks never complete (e.g. the callback contains an infinite loop), the other callbacks may not be executed at all
 		</li>				
 	</ul>
@@ -262,15 +264,15 @@ purchase onSuccess{
   case bool => println("Purchase was a success")
 }</code></pre>
 
-	<h3 class="slide">The <code>map</code> combinator works as follows:</h3>
+	<h3>The <code>map</code> combinator works as follows:</h3>
 	<ul>
-		<li class="slide">
+		<li>
 			If the original future is completed successfully then the returned future is completed with a mapped value from the original future.
 		</li>
-		<li class="slide">
+		<li>
 			If the mapping function throws an exception the future is completed with that exception.
 		</li>
-		<li class="slide">
+		<li>
 			If the original future fails with an exception then the returned future also contains the same exception
 		</li>				
 	</ul>	
@@ -290,16 +292,16 @@ purchase onSuccess{
   case bool => println("Purchase was a success")
 }</code></pre>		
 	<ul>
-		<li class="slide">
+		<li>
 			To enable for-comprehensions, futures also have the <code>flatMap</code>, <code>filter</code> and <code>foreach</code> combinators
 		</li>
-		<li class="slide">
+		<li>
 			The <code>flatMap</code> method takes a function that maps the value to a new future <code>g</code>, and then returns a future which is completed once <code>g</code> is completed.
 		</li>
-		<li class="slide">
+		<li>
 			The <code>filter</code> combinator creates a new future which contains the value of the original future only if it satisfies some predicate. Otherwise, the new future is failed with a <code>NoSuchElementException</code>
 		</li>	
-		<li class="slide">
+		<li>
 			The <code>foreach</code> combinator (not shown) does not block. Instead, the function for the <code>foreach</code> gets asynchronously executed only if the future is completed successfully. This means that the <code>foreach</code> has exactly the same semantics as the onSuccess callback.
 		</li>						
 	</ul>			
@@ -314,16 +316,16 @@ val purchase = prod map{
   case ne:NotAvailableException => false
 }</code></pre>		
 	<ul>
-		<li class="slide">
+		<li>
 			If an operation inside the <code>future</code> might throw an exception, you can opt to recover from it and return a non-exception instead with the <code>recover</code> combinator.
 		</li>
-		<li class="slide">
+		<li>
 			The <code>recover</code> combinator creates a new future which holds the same result as the original future if it completed successfully.
 		</li>
-		<li class="slide">
+		<li>
 			If it did not then the partial function argument is applied to the Throwable which failed the original future. If it maps the Throwable to some value, then the new future is successfully completed with that value.
 		</li>	
-		<li class="slide">
+		<li>
 			You could also use <code>recoverWith</code> which will instead map the failure case to a new <code>Future</code>.  The relationship between <code>recover</code> and <code>recoverWith</code> is similar to <code>map</code> and <code>flatMap</code>.
 		</li>						
 	</ul>			
@@ -341,13 +343,13 @@ val prod2Res = future{
 val result = prod1Res fallbackTo prod2Res
 result onSuccess {case str => println(str)}</code></pre>		
 	<ul>
-		<li class="slide">
+		<li>
 			In the above example, the <code>"Product 1 Price"</code> will be printed as long as the <code>prod1Res Future</code> succeeds.
 		</li>
-		<li class="slide">
+		<li>
 			If it fails, and the <code>prod2Res Future</code> succeeds, then the <code>"Product 2 Price"</code> string will be printed instead.
 		</li>
-		<li class="slide">
+		<li>
 			If both fail, then the result <code>Future</code> will be completed with the exception from the <code>prod1Res Future</code>.
 		</li>						
 	</ul>			
@@ -365,7 +367,7 @@ val prod2Res = future{
 val result = prod1Res either prod2Res
 result onSuccess {case str => println(str)}</code></pre>		
 	<ul>
-		<li class="slide">
+		<li>
 			The <code>either</code> combinator creates a new <code>Future</code> with the result of either <code>prod1Res</code> or <code>prod2Res</code>, whichever completes first, regardless of failure .
 		</li>						
 	</ul>			
@@ -383,19 +385,19 @@ future {
   for (price <- allprices) println(price)
 }</code></pre>		
 	<ul>
-		<li class="slide">
+		<li>
 			The <code>andThen</code> combinator is used purely for side-effecting purposes.
 		</li>
-		<li class="slide">
+		<li>
 			It returns a new future with exactly the same result as the current future, irregardless of whether the current future failed or not.
 		</li>
-		<li class="slide">
+		<li>
 			Once the current future is completed with the result, the closure corresponding to the <code>andThen</code> is invoked and then the new future is completed with the same result as this future.
 		</li>	
-		<li class="slide">
+		<li>
 			This ensures that multiple <code>andThen</code> calls are ordered.
 		</li>
-		<li class="slide">
+		<li>
 			Note that if one of the chained <code>andThen</code> callbacks throws an exception, that exception is not propagated to the subsequent <code>andThen</code> callbacks. Instead, the subsequent <code>andThen</code> callbacks are given the original value of this future.
 		</li>														
 	</ul>			
@@ -404,13 +406,13 @@ future {
 <section class="slide" id="futures-proj">
 	<h2>Projections on Futures</h2>
 	<ul>
-		<li class="slide">
+		<li>
 			To enable for-comprehensions on a result returned as an exception, futures also have projections.
 		</li>
-		<li class="slide">
+		<li>
 			 If the original future fails, the <code>failed</code> projection returns a future containing a value of type <code>Throwable</code>
 		</li>	
-		<li class="slide">
+		<li>
 			 If the original future succeeds, the <code>failed</code> projection fails with a <code>NoSuchElementException</code>.
 		</li>				
 	</ul>
@@ -432,13 +434,13 @@ for (exc <- f.failed) println(exc)</code></pre>
 <section class="slide" id="futures-blocking">
 	<h2>Blocking to wait for the result</h2>
 	<ul>
-		<li class="slide">
+		<li>
 			 Blocking on a future is strongly discouraged, for the sake of performance and for the prevention of deadlocks, in favour of using callbacks and combinators on futures.
 		</li>
-		<li class="slide">
+		<li>
 			 However, blocking may be necessary in certain situations and is supported by the Futures API.
 		</li>	
-		<li class="slide">
+		<li>
 			 You can use the <code>Await.result</code> in order to block and wait until a <code>Future</code> has been completed (will throw a <code>TimeoutException</code> if the timeout expires).
 		</li>				
 	</ul>
@@ -459,16 +461,16 @@ val result = Await.result(purchase, 1 second)</code></pre>
 <section class="slide" id="promises-intro">
 	<h2>Ok, I get Futures, but what's a Promise?</h2>
 	<ul>
-		<li class="slide">
+		<li>
 			 While futures are defined as a type of read-only placeholder object created for a result which doesn't yet exist, a promise can be thought of as a writeable, single-assignment container, which completes a future.
 		</li>
-		<li class="slide">
+		<li>
 			 A promise can be used to successfully complete a future with a value (by "completing" the promise) using the <code>success</code> method. 
 		</li>	
-		<li class="slide">
+		<li>
 			 A promise can also be used to complete a future with an exception, by failing the promise, using the <code>failure</code> method.
 		</li>	
-		<li class="slide">
+		<li>
 			A promise <code>p</code> completes the future returned by <code>p.future</code>. This future is specific to the promise <code>p</code>.	 
 		</li>			
 	</ul>
@@ -489,19 +491,19 @@ val consumer = future {
 }</code></pre>	
 
 	<ul>
-		<li class="slide">
+		<li>
 			 Here, we create a promise and use its <code>future</code> method to obtain the <code>Future</code> that it completes.
 		</li>
-		<li class="slide">
+		<li>
 			 Then, we begin two asynchronous computations. The first does some computation, resulting in a value <code>r</code>, which is then used to complete the future <code>f</code>, by fulfilling <code>p</code>. 
 		</li>	
-		<li class="slide">
+		<li>
 			 The second does some computation, and then reads the result <code>r</code> of the completed future <code>f</code>.
 		</li>	
-		<li class="slide">
+		<li>
 			Note that the consumer can obtain the result before the producer task is finished executing the <code>continueDoingSomethingUnrelated()</code> method.	 
 		</li>
-		<li class="slide">
+		<li>
 			A <code>Promise</code> can be completed only once. Calling <code>success</code> on a promise that has already been completed (or failed) will throw an <code>IllegalStateException</code>.	 
 		</li>					
 	</ul>
@@ -522,13 +524,13 @@ val producer = future {
 }</code></pre>	
 
 	<ul>
-		<li class="slide">
+		<li>
 			 Completing a <code>Promise</code> with an <code>Exception</code> will fail the <code>Promise</code>.
 		</li>
-		<li class="slide">
+		<li>
 			 The associated future <code>f</code> will also be failed. 
 		</li>		
-		<li class="slide">
+		<li>
 			Promises can also be completed with a <code>complete</code> method which takes a <code>Try[T]</code> that can be either a failed result of type <code>Failure[Throwable]</code> or a successful result of type <code>Success[T]</code>.	 
 		</li>					
 	</ul>
@@ -550,16 +552,16 @@ val fut2 = future{
 pf onSuccess { case i => println("Got value: " + i)}</code></pre>	
 
 	<ul>
-		<li class="slide">
+		<li>
 			 It's possible for multiple futures to want to complete the same <code>Promise</code> (think a situation where you just want the first result that comes back).
 		</li>
-		<li class="slide">
+		<li>
 			 If both futures used the <code>success</code> operation, then one of them would result in an <code>IllegalStateException</code> because the <code>Promise</code> can only be completed once.
 		</li>		
-		<li class="slide">
+		<li>
 			To remdey this, in these situations, the futures can instead call <code>trySuccess</code> to prevent failures.  The only issue here is that code like this is non-deterministic, so use with care.	 
 		</li>
-		<li class="slide">
+		<li>
 			There is <code>tryFailure</code> and <code>tryComplete</code> on <code>Promise</code> as well. 
 		</li>							
 	</ul>
@@ -568,19 +570,19 @@ pf onSuccess { case i => println("Got value: " + i)}</code></pre>
 <section class="slide" id="duration">
 	<h2>The Duration Abstraction</h2>
 	<ul>
-		<li class="slide">
+		<li>
 			 A <code>Duration</code> abstraction has also been introduced to simplify time based operations within the <code>concurrent</code> package.
 		</li>
-		<li class="slide">
+		<li>
 			 <code>Duration</code> is the base class representing length of time. It can be either finite or infinite.
 		</li>		
-		<li class="slide">
+		<li>
 			Finite duration is represented with <code>FiniteDuration<code> class which is constructed from <code>Long</code> length and <code>java.util.concurrent.TimeUnit</code>.	 
 		</li>
-		<li class="slide">
+		<li>
 			Infinite durations, also extended from <code>Duration</code>, exist in only two instances, </code>Duration.Inf</code> and <code>Duration.MinusInf</code>. 
 		</li>
-		<li class="slide">
+		<li>
 			Abstract <code>Duration</code> contains methods that allow:
 			<ul>
 				<li>
@@ -600,7 +602,7 @@ pf onSuccess { case i => println("Got value: " + i)}</code></pre>
 				</li>																
 			</ul> 
 		</li>
-		<li class="slide">
+		<li>
 			<code>Duration</code> can be instantiated in the following ways:
 			<ul>
 				<li>
@@ -610,11 +612,11 @@ pf onSuccess { case i => println("Got value: " + i)}</code></pre>
 					By passing a <code>Long</code> length and a <code>java.util.concurrent.TimeUnit</code>. For example <code>val d = Duration(100, MILLISECONDS)</code>.
 				</li>
 				<li>
-					By parsing a string that represent a time period. For example <code>val d = Duration("1.2 ms")</code>.
+					By parsing a string that represent a time period. For example <code>val d = Duration("1.2 us")</code>.
 				</li>																
 			</ul> 
 		</li>
-		<li class="slide">
+		<li>
 			<code>Duration</code> also provides <code>unapply</code> methods so it can be used in pattern matching constructs.
 		</li>											
 	</ul>
@@ -629,7 +631,7 @@ import java.util.concurrent.TimeUnit._
 val d1 = Duration(100, MILLISECONDS) // from Long and TimeUnit
 val d2 = Duration(100, "millis") // from Long and String
 val d3 = 100 millis // implicitly from Long, Int or Double
-val d4 = Duration("1.2 µs") // from String
+val d4 = Duration("1.2 us") // from String
 // pattern matching
 val Duration(length, unit) = 5 millis</code></pre>
 </section>
@@ -644,9 +646,6 @@ val Duration(length, unit) = 5 millis</code></pre>
 </ul>
 </section>
 
-Implicitly from types Int and Long. For example val d = 100 millis.
-By passing a Long length and a java.util.concurrent.TimeUnit. For example val d = Duration(100, MILLISECONDS).
-By parsing a string that represent a time period. For example val d = Duration("1.2 µs").
 
 <a href="#" class="deck-prev-link" title="Previous">&#8592;</a>
 <a href="#" class="deck-next-link" title="Next">&#8594;</a>
